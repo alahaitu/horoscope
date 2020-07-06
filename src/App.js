@@ -1,163 +1,130 @@
-import './tailwind.output.css'
-
-import React, {useState} from 'react'
-import {Radar} from 'react-chartjs-2'
-import {useForm} from 'react-hook-form'
+import React, {useState} from "react";
+import {Radar} from "react-chartjs-2";
 
 function App() {
-  const [isFinished, setIsFinished] = useState(false);
-  const { register, handleSubmit } = useForm();
+  // the index number of the question that is being asked
+  const [count, setCount] = useState(0);
+
+  // the current answer that the user has selected
+  const [selection, setSelection] = useState(0);
+
+  // target values that are always the same
+  const targetValues = [10, 20, 30, 40];
+
+  // values that are changed by answering questions, by default same as target values
+  const [userValues, setUserValues] = useState(targetValues);
+
+  // these are the questions that are asked in this order
   const questions = [
     {
       questionText: "This is Question 1",
-      questionName: "q1",
-      questionOptions: ["20", "40", "90"],
+      questionOptions: [
+        { text: "This is question 1 text 1", value: 20 },
+        { text: "This is question 1 text 2", value: 40 },
+        { text: "This is question 1 text 2", value: 60 },
+      ],
+      dimension: "beta",
     },
     {
       questionText: "This is Question 2",
-      questionName: "q2",
-      questionOptions: ["20", "40", "90"],
-    },
-    {
-      questionText: "This is Question 3",
-      questionName: "q3",
-      questionOptions: ["20", "40", "90"],
-    },
-    {
-      questionText: "This is Question 4",
-      questionName: "q4",
-      questionOptions: ["20", "40", "90"],
-    },
-    {
-      questionText: "This is Question 5",
-      questionName: "q5",
-      questionOptions: ["20", "40", "90"],
-    },
-    {
-      questionText: "This is Question 6",
-      questionName: "q6",
-      questionOptions: ["20", "40", "90"],
+      questionOptions: [
+        { text: "This is question 2 text 1", value: 20 },
+        { text: "This is question 2 text 2", value: 40 },
+        { text: "This is question 2 text 2", value: 60 },
+      ],
+      dimension: "omega",
     },
   ];
-  const onSubmit = (data) => {
-    setIsFinished(true);
-    setData({
-      ...initData,
-      datasets: [
-        {
-          label: "My dataset",
-          backgroundColor: "rgba(255,99,132,0.2)",
-          borderColor: "rgba(255,99,132,1)",
-          pointBackgroundColor: "rgba(255,99,132,1)",
-          pointBorderColor: "#fff",
-          pointHoverBackgroundColor: "#fff",
-          pointHoverBorderColor: "rgba(255,99,132,1)",
-          data: [data.q1, data.q2, data.q3, data.q4, data.q5],
-        },
-      ],
-    });
+
+  // the dimensions in the chart thingie
+  const labels = ["alpha", "beta", "gamma", "omega"];
+
+  const data = {
+    labels: labels,
+    datasets: [
+      // this is the "target" data that always stays the same
+      {
+        backgroundColor: "gray",
+        borderColor: "gray",
+        label: "target",
+        data: targetValues,
+      },
+      // this is the data that changes when users answers questions
+      {
+        backgroundColor: "yellow",
+        borderColor: "yellow",
+        label: "user",
+        data: userValues,
+      },
+    ],
   };
-  const initData = {
-    labels: ["Eating", "Drinking", "Sleeping", "Designing", "Coding"],
-    datasets: [],
-  };
+
+  // chart configurations
   const options = {
-    scale: {
-      pointLabels: {
-        display: false,
-      },
-      angleLines: {
-        display: false,
-      },
-      ticks: {
-        display: false,
-      },
-      gridLines: {
-        display: true,
+    maintainAspectRatio: true,
+    spanGaps: false,
+    elements: {
+      line: {
+        tension: 0.000001,
       },
     },
   };
-  const [data, setData] = useState(initData);
 
-  const Question = (props) => {
-    return (
-      <div className="py-4">
-        <p className="py-2 text-base text-gray-700 leading-normal">
-          {props.questionText}
-        </p>
-        <select
-          name={props.questionName}
-          ref={register}
-          className="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline"
-        >
-          <option>20</option>
-          <option>60</option>
-          <option>90</option>
-        </select>
-      </div>
+  // run every time user selects an option
+  const handleChange = (event) => {
+    const selectedValue = event.target.value;
+    setSelection(
+      questions[count].questionOptions.findIndex(
+        (option) => option.value === selectedValue
+      )
     );
   };
 
-  const SubmitButton = () => {
-    return (
-      <div className="py-4">
-        <button
-          type="submit"
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          Submit
-        </button>
-      </div>
-    );
+  // run when the user presses submit button
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    setCount(count + 1);
+    // copy old user values and change the selected value
+    const newUserValues = [...userValues];
+    // newUserValues[count] = questions[count].questionOptions[selection].value;
+    setUserValues(newUserValues);
   };
 
-  const ResetButton = () => {
-    return (
-      <div className="py-4">
-        <button
-          onClick={() => setIsFinished(false)}
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          Reset
-        </button>
-      </div>
-    );
-  };
+  // html for asking questions
+  const question = (
+    <div>
+      <p>{questions[count]?.questionText}</p>
+      {questions[count]?.questionOptions.map((option, index) => (
+        <div key={index}>
+          <label>
+            {option.text}
+            <input
+              type="radio"
+              value={option.value}
+              onChange={handleChange}
+              checked={
+                option.value ===
+                questions[count].questionOptions[selection].value
+              }
+            />
+          </label>
+          <br />
+        </div>
+      ))}
+      <br />
+      <input type="submit" value="Submit" />
+    </div>
+  );
 
   return (
     <>
-      <div className="container mx-auto px-4 py-4">
-        <div className="ml-6 pt-1">
-          <h1 className="text-2xl text-blue-700 leading-tight">
-            A Nice Questionnaire
-          </h1>
-          {!isFinished ? (
-            <form onSubmit={handleSubmit(onSubmit)}>
-              <>
-                {questions.map((question) => (
-                  <Question
-                    key={question.questionName}
-                    questionText={question.questionText}
-                    questionName={question.questionName}
-                  />
-                ))}
-                <SubmitButton />
-              </>
-            </form>
-          ) : (
-            <>
-              <div className="p-4">
-                {data.datasets[0]?.data && data.datasets[0].data.length > 0 && (
-                  <Radar data={data} options={options} />
-                )}
-                <div className="mx-auto">
-                  <ResetButton />
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+      <form onSubmit={handleSubmit}>
+        <div></div>
+        {/* if current question is smaller than question array length 
+        ask question, otherwise show ending text */}
+        {count < questions.length ? question : <p>Finished</p>}
+      </form>
+      <Radar data={data} options={options} />
     </>
   );
 }
