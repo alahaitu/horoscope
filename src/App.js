@@ -1,66 +1,70 @@
-import React, {useState} from "react";
+import React, {Component} from "react";
 import {Radar} from "react-chartjs-2";
 
-function App() {
-  // the index number of the question that is being asked
-  const [count, setCount] = useState(0);
+class App extends Component {
+  // the dimensions in the chart thingie
+  labels = ["alpha", "beta", "gamma", "omega"];
 
-  // the current answer that the user has selected
-  const [selection, setSelection] = useState(0);
-
-  // target values that are always the same
-  const targetValues = [10, 20, 30, 40];
-
-  // values that are changed by answering questions, by default same as target values
-  const [userValues, setUserValues] = useState(targetValues);
+  // target values that are always the same. must match the number of dimensions
+  targetValues = [10, 20, 30, 40];
 
   // these are the questions that are asked in this order
-  const questions = [
+  questions = [
     {
       questionText: "This is Question 1",
       questionOptions: [
-        { text: "This is question 1 text 1", value: 20 },
-        { text: "This is question 1 text 2", value: 40 },
-        { text: "This is question 1 text 2", value: 60 },
+        { text: "This is question 1 text 1", value: "10" },
+        { text: "This is question 1 text 2", value: "20" },
+        { text: "This is question 1 text 3", value: "40" },
       ],
-      dimension: "beta",
     },
     {
       questionText: "This is Question 2",
       questionOptions: [
-        { text: "This is question 2 text 1", value: 20 },
-        { text: "This is question 2 text 2", value: 40 },
-        { text: "This is question 2 text 2", value: 60 },
+        { text: "This is question 2 text 1", value: "10" },
+        { text: "This is question 2 text 2", value: "20" },
+        { text: "This is question 2 text 3", value: "40" },
       ],
-      dimension: "omega",
     },
   ];
 
-  // the dimensions in the chart thingie
-  const labels = ["alpha", "beta", "gamma", "omega"];
-
-  const data = {
-    labels: labels,
+  // data passed to radar chart
+  data = {
+    labels: this.labels,
     datasets: [
       // this is the "target" data that always stays the same
       {
         backgroundColor: "gray",
         borderColor: "gray",
         label: "target",
-        data: targetValues,
+        data: this.targetValues,
       },
       // this is the data that changes when users answers questions
       {
         backgroundColor: "yellow",
         borderColor: "yellow",
         label: "user",
-        data: userValues,
+        data: this.targetValues,
       },
     ],
   };
 
+  constructor(props) {
+    super(props);
+    this.state = {
+      // the index number of the question that is being asked
+      count: 0,
+      // the current answer that the user has selected
+      selection: this.questions[0].questionOptions[0].value,
+      data: this.data,
+    };
+
+    this.handleChange = this.handleChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
+  }
+
   // chart configurations
-  const options = {
+  options = {
     maintainAspectRatio: true,
     spanGaps: false,
     elements: {
@@ -71,62 +75,68 @@ function App() {
   };
 
   // run every time user selects an option
-  const handleChange = (event) => {
-    const selectedValue = event.target.value;
-    setSelection(
-      questions[count].questionOptions.findIndex(
-        (option) => option.value === selectedValue
-      )
-    );
-  };
+  handleChange(event) {
+    const selection = event.target.value;
+    this.setState({ selection });
+  }
 
   // run when the user presses submit button
-  const handleSubmit = (event) => {
+  handleSubmit(event) {
     event.preventDefault();
-    setCount(count + 1);
     // copy old user values and change the selected value
-    const newUserValues = [...userValues];
-    // newUserValues[count] = questions[count].questionOptions[selection].value;
-    setUserValues(newUserValues);
-  };
+    const newUserValues = [...this.state.data.datasets[1].data];
+    newUserValues[this.state.count] = parseInt(this.state.selection);
+    const count = this.state.count + 1;
+    const data = { ...this.state.data };
+    data.datasets[1].data = newUserValues;
+    this.setState({
+      count: count,
+      selection: this.questions[count]?.questionOptions[0]?.value,
+      data: data,
+    });
+  }
 
-  // html for asking questions
-  const question = (
-    <div>
-      <p>{questions[count]?.questionText}</p>
-      {questions[count]?.questionOptions.map((option, index) => (
-        <div key={index}>
-          <label>
-            {option.text}
-            <input
-              type="radio"
-              value={option.value}
-              onChange={handleChange}
-              checked={
-                option.value ===
-                questions[count].questionOptions[selection].value
-              }
-            />
-          </label>
-          <br />
-        </div>
-      ))}
-      <br />
-      <input type="submit" value="Submit" />
-    </div>
-  );
-
-  return (
-    <>
-      <form onSubmit={handleSubmit}>
-        <div></div>
-        {/* if current question is smaller than question array length 
+  render() {
+    // html for asking questions
+    const question = (
+      <div>
+        <p>{this.questions[this.state.count]?.questionText}</p>
+        {this.questions[this.state.count]?.questionOptions.map(
+          (option, index) => (
+            <div key={index}>
+              <label>
+                {option.text}
+                <input
+                  type="radio"
+                  value={option.value}
+                  onChange={this.handleChange}
+                  checked={option.value === this.state.selection}
+                />
+              </label>
+              <br />
+            </div>
+          )
+        )}
+        <br />
+        <input type="submit" value="Submit" />
+      </div>
+    );
+    return (
+      <>
+        <form onSubmit={this.handleSubmit}>
+          <div></div>
+          {/* if current question is smaller than question array length 
         ask question, otherwise show ending text */}
-        {count < questions.length ? question : <p>Finished</p>}
-      </form>
-      <Radar data={data} options={options} />
-    </>
-  );
+          {this.state.count < this.questions.length ? (
+            question
+          ) : (
+            <p>Finished</p>
+          )}
+        </form>
+        <Radar data={this.data} options={this.options} />
+      </>
+    );
+  }
 }
 
 export default App;
